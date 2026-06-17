@@ -1,0 +1,53 @@
+# ===================================================================
+# Production Environment Configuration
+# ===================================================================
+spring:
+  # MySQL DataSource (production — override via env vars)
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:short_link}?useUnicode=true&characterEncoding=utf8mb4&serverTimezone=Asia/Shanghai&useSSL=true&allowPublicKeyRetrieval=false
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  # Redis (production — override via env vars)
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      database: 1
+      password: ${REDIS_PASSWORD:}
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 4
+
+# ===================================================================
+# JWT (production — MUST override via env var)
+# ===================================================================
+jwt:
+  secret: ${JWT_SECRET:change-me-to-a-random-256-bit-key}
+  expiration: 86400000
+
+# ===================================================================
+# ShortLink (production)
+# ===================================================================
+short-link:
+  default-expire-days: 365
+  code-length: 7
+  base-url: ${BASE_URL:https://short.example.com}
+
+# ===================================================================
+# Logging (Production)
+# ===================================================================
+logging:
+  level:
+    root: WARN
+    com.shortlink: INFO

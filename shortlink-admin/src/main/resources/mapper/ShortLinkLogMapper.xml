@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shortlink.system.mapper.ShortLinkLogMapper">
+
+    <!-- ==================== Aggregate Statistics ==================== -->
+
+    <!-- Count unique IPs for a given link -->
+    <select id="countUniqueIps" resultType="java.lang.Long">
+        SELECT COUNT(DISTINCT access_ip)
+        FROM short_link_log
+        WHERE link_id = #{linkId}
+    </select>
+
+    <!-- Count clicks within a date range -->
+    <select id="countByLinkIdAndDateRange" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM short_link_log
+        WHERE link_id = #{linkId}
+        AND access_time &gt;= #{start}
+        AND access_time &lt; #{end}
+    </select>
+
+    <!-- Daily click counts for chart display -->
+    <select id="countDailyByLinkId" resultType="java.util.HashMap">
+        SELECT
+            DATE_FORMAT(access_time, '%Y-%m-%d') AS `date`,
+            COUNT(*)                              AS `count`
+        FROM short_link_log
+        WHERE link_id = #{linkId}
+        AND access_time &gt;= DATE_SUB(CURDATE(), INTERVAL #{days} DAY)
+        GROUP BY DATE_FORMAT(access_time, '%Y-%m-%d')
+        ORDER BY `date` ASC
+    </select>
+
+    <!-- Device type distribution: PC vs MOBILE vs TABLET -->
+    <select id="countByDeviceType" resultType="java.util.HashMap">
+        SELECT
+            IFNULL(device_type, 'UNKNOWN') AS `name`,
+            COUNT(*)                       AS `value`
+        FROM short_link_log
+        WHERE link_id = #{linkId}
+        GROUP BY device_type
+        ORDER BY `value` DESC
+    </select>
+
+    <!-- Browser distribution: Chrome, Safari, Firefox, etc. -->
+    <select id="countByBrowser" resultType="java.util.HashMap">
+        SELECT
+            IFNULL(browser, 'Unknown') AS `name`,
+            COUNT(*)                   AS `value`
+        FROM short_link_log
+        WHERE link_id = #{linkId}
+        GROUP BY browser
+        ORDER BY `value` DESC
+        LIMIT 10
+    </select>
+
+    <!-- Referer TOP 10 -->
+    <select id="countByReferer" resultType="java.util.HashMap">
+        SELECT
+            CASE
+                WHEN referer IS NULL OR referer = '' THEN '直接访问'
+                ELSE referer
+            END   AS `name`,
+            COUNT(*) AS `value`
+        FROM short_link_log
+        WHERE link_id = #{linkId}
+        GROUP BY `name`
+        ORDER BY `value` DESC
+        LIMIT 10
+    </select>
+
+    <!-- Most recent access timestamp -->
+    <select id="getLastAccessTime" resultType="java.lang.String">
+        SELECT DATE_FORMAT(MAX(access_time), '%Y-%m-%d %H:%i:%s')
+        FROM short_link_log
+        WHERE link_id = #{linkId}
+    </select>
+
+    <!-- ==================== Paginated Logs ==================== -->
+
+    <resultMap id="ShortLinkLogResult" type="com.shortlink.system.entity.ShortLinkLog">
+        <id     property="id"         column="id"/>
+        <result property="linkId"     column="link_id"/>
+        <result property="shortCode"  column="short_code"/>
+        <result property="accessIp"   column="access_ip"/>
+        <result property="userAgent"  column="user_agent"/>
+        <result property="referer"    column="referer"/>
+        <result property="country"    column="country"/>
+        <result property="city"       column="city"/>
+        <result property="deviceType" column="device_type"/>
+        <result property="browser"    column="browser"/>
+        <result property="os"         column="os"/>
+        <result property="accessTime" column="access_time"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <!-- Paginated click log with optional time-range filter -->
+    <select id="selectPageByLinkId" resultMap="ShortLinkLogResult">
+        SELECT *
+        FROM short_link_log
+        WHERE link_id = #{linkId}
+        <if test="startDate != null and startDate != ''">
+            AND access_time &gt;= #{startDate}
+        </if>
+        <if test="endDate != null and endDate != ''">
+            AND access_time &lt; #{endDate}
+        </if>
+        ORDER BY access_time DESC
+    </select>
+
+</mapper>

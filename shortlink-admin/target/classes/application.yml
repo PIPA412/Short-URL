@@ -1,0 +1,69 @@
+# ===================================================================
+# ShortLink Management System - Main Configuration
+# ===================================================================
+server:
+  port: 8080
+
+spring:
+  profiles:
+    active: dev
+
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    default-property-inclusion: non_null
+
+  # Spring Cache (backed by Redis)
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000       # 1h default TTL (ms)
+      cache-null-values: false     # Null values handled explicitly per cache
+      key-prefix: "cache:"         # Redis key prefix for @Cacheable entries
+
+# ===================================================================
+# MyBatis-Plus Configuration
+# ===================================================================
+mybatis-plus:
+  global-config:
+    db-config:
+      id-type: AUTO
+      logic-delete-field: del_flag
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    cache-enabled: false
+  mapper-locations: classpath:mapper/**/*.xml
+  type-aliases-package: com.shortlink.**.entity
+
+# ===================================================================
+# JWT Configuration
+# ===================================================================
+jwt:
+  secret: shortlink-default-dev-secret-key-change-in-production-32chars
+  expiration: 86400000
+
+# ===================================================================
+# ShortLink Business Configuration
+# ===================================================================
+short-link:
+  default-expire-days: 365
+  code-length: 7
+  base-url: http://localhost:8080
+
+# ===================================================================
+# SpringDoc OpenAPI Configuration
+# ===================================================================
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  info:
+    title: ShortLink Management System API
+    version: 1.0.0
+    description: Short link generation and management system
