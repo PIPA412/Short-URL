@@ -1,0 +1,41 @@
+# ============================================================
+# Spring Boot — Docker 环境配置文件
+# 覆盖开发环境的数据库、Redis 连接地址
+# 激活方式：spring.profiles.active = druid,docker
+# ============================================================
+
+# 文件上传路径（容器内路径）
+zsc:
+  profile: ${FILE_UPLOAD_PATH:/app/upload}
+
+spring:
+  # Redis 配置（容器内连接 redis 服务）
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+      database: ${REDIS_DB:0}
+      password: ${REDIS_PASSWORD:}
+      timeout: 10s
+      lettuce:
+        pool:
+          min-idle: 0
+          max-idle: 8
+          max-active: 16
+          max-wait: -1ms
+
+  # 数据源配置（覆盖 druid profile 中的 localhost）
+  datasource:
+    druid:
+      master:
+        url: jdbc:mysql://${MYSQL_HOST:mysql}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:zsc}?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+        username: ${MYSQL_USER:root}
+        password: ${MYSQL_PASSWORD:root123}
+      # Docker 环境下关闭从库
+      slave:
+        enabled: false
+
+  # 关闭热部署（容器内不需要）
+  devtools:
+    restart:
+      enabled: false

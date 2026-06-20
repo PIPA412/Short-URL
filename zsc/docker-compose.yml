@@ -1,0 +1,107 @@
+# ============================================================
+# Docker Compose — 短链接管理系统
+# 一键启动：docker compose up -d
+# 停止：     docker compose down
+# 重置数据： docker compose down -v
+# ============================================================
+services:
+
+  # ---------- MySQL 8 数据库 ----------
+  mysql:
+    image: mysql:8.0
+    container_name: zsc-mysql
+    hostname: mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123}
+      TZ: Asia/Shanghai
+    ports:
+      - "3307:3306"                  # 映射到 3307 以免与本地 MySQL 冲突
+    volumes:
+      # 数据持久化
+      - mysql-data:/var/lib/mysql
+      # 初始化脚本（第一次启动时执行）
+      - ./docker/mysql/init/init.sh:/docker-entrypoint-initdb.d/init.sh
+      # 项目 SQL 文件（供 init.sh 导入）
+      - ./zsc_backend/sql:/sql-init
+    command:
+      - mysqld
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --max-allowed-packet=128M
+      - --default-time-zone=+8:00
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root123}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ---------- Redis 7 缓存 ----------
+  redis:
+    image: redis:7-alpine
+    container_name: zsc-redis
+    hostname: redis
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --save 900 1 --save 300 10
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ---------- Java 后端服务 ----------
+  server:
+    build:
+      context: ./zsc_backend          # 构建上下文（Dockerfile 所在目录）
+      dockerfile: Dockerfile
+    container_name: zsc-server
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      TZ: Asia/Shanghai
+      # 服务发现：通过容器名连接 MySQL 和 Redis
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: zsc
+      MYSQL_USER: root
+      MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+      # JVM 参数
+      JAVA_OPTS: ${JAVA_OPTS:--Xms256m -Xmx512m}
+    ports:
+      - "8080:8080"
+    volumes:
+      # 日志持久化
+      - app-logs:/app/logs
+      # 文件上传持久化
+      - app-upload:/app/upload
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+# ---------- 命名卷（持久化数据） ----------
+volumes:
+  mysql-data:
+    name: zsc-mysql-data
+  redis-data:
+    name: zsc-redis-data
+  app-logs:
+    name: zsc-app-logs
+  app-upload:
+    name: zsc-app-upload

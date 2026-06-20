@@ -1,0 +1,2 @@
+2026-06-19 18:08:30.396 [http-nio-8080-exec-14] INFO  c.z.w.c.c.ShortLinkRedirectController - [redirect,69] - 短链接重定向成功: test001 → https://www.baidu.com
+2026-06-19 18:10:16.955 [http-nio-8080-exec-25] WARN  c.z.w.c.c.ShortLinkRedirectController - [redirect,64] - 短链接不存在或已失效: shortCode=favicon.ico

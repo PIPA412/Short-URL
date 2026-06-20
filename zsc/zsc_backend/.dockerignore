@@ -1,0 +1,44 @@
+# ============================================================
+# .dockerignore — 减少 Docker 构建上下文体积
+# ============================================================
+
+# 本地 Maven 仓库（重新下载）
+**/.m2/
+**/repository/
+
+# 编译产物
+**/target/
+**/*.class
+**/*.jar
+!**/pom.xml
+
+# IDE 文件
+**/.idea/
+**/.vscode/
+**/*.iml
+**/*.ipr
+**/*.iws
+**/.classpath
+**/.project
+**/.settings
+**/.metadata
+
+# 版本控制
+**/.git/
+**/.gitignore
+**/.gitattributes
+
+# 日志
+**/logs/
+**/*.log
+
+# 系统文件
+**/.DS_Store
+**/Thumbs.db
+
+# Node 相关（如果有）
+**/node_modules/
+
+# 临时文件
+**/tmp/
+**/temp/
